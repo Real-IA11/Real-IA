@@ -1,0 +1,60 @@
+fastapi
+uvicorn
+streamlit
+requests
+python-multipart
+
+from fastapi import FastAPI, Form
+from fastapi.responses import HTMLResponse
+import requests, os
+
+app = FastAPI()
+OPENAI_KEY = os.getenv("OPENAI_API_KEY")
+
+@app.get("/", response_class=HTMLResponse)
+def home():
+    return """
+    <h2>🚀 Real IA API</h2>
+    <p>Use o endpoint <code>/chat</code> para conversar com a IA.</p>
+    """
+
+@app.post("/chat")
+def chat(msg: str = Form(...)):
+    headers = {"Authorization": f"Bearer {OPENAI_KEY}", "Content-Type": "application/json"}
+    body = {
+        "model": "gpt-4o-mini",
+        "messages": [
+            {"role": "system", "content": "Você é a Real IA — uma assistente útil, inteligente e amigável."},
+            {"role": "user", "content": msg}
+        ],
+        "max_tokens": 512,
+        "temperature": 0.8
+    }
+    r = requests.post("https://api.openai.com/v1/chat/completions",
+                      headers=headers, json=body)
+    r.raise_for_status()
+    data = r.json()
+    return {"reply": data["choices"][0]["message"]["content"]}
+
+import streamlit as st
+import requests
+
+st.set_page_config(page_title="Real IA", page_icon="🤖")
+st.title("🤖 Real IA")
+
+st.markdown("Converse com a Real IA — sua assistente inteligente com tecnologia GPT-4.")
+
+msg = st.text_area("Digite sua mensagem:")
+if st.button("Enviar") and msg:
+    resp = requests.post(
+        "https://real-ia-production.up.railway.app/chat",
+        data={"msg": msg}
+    )
+    if resp.ok:
+        st.write("💬 Real IA:", resp.json()["reply"])
+    else:
+        st.error("Erro ao conectar com a Real IA. Verifique o backend.")
+
+web: uvicorn backend:app --host 0.0.0.0 --port $PORT
+
+OPENAI_API_KEY=coloque_sua_api_key_aqui
